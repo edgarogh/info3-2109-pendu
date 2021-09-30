@@ -194,7 +194,7 @@ void empty_stdin() {
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
-int main() {
+int main(int argc, char** argv) {
 #ifdef NDEBUG
     // En mode "release", on seede le RNG, mais pas en "debug"
     srand(clock());
@@ -203,7 +203,23 @@ int main() {
            "Compilez avec `-DNDEBUG` pour avoir la version \"release\".\n\e[0m");
 #endif
 
-    char* secret = Dictionary_get_random_word(Dictionary_read("dico.txt"));
+    char* dictionary_path;
+
+    switch (argc) {
+        case 1:
+            dictionary_path = "dico.txt";
+            break;
+        case 2:
+            dictionary_path = argv[1];
+            break;
+        default:
+            fprintf(stderr, "Trop d'arguments\n");
+            exit(1);
+    }
+
+    Dictionary dict = Dictionary_read(dictionary_path);
+    printf("%ld mots chargés\n", dict.len);
+    char* secret = Dictionary_get_random_word(dict);
 
     State state = State_new(secret);
 
