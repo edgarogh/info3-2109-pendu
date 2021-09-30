@@ -40,6 +40,11 @@ char* Dictionary_get(Dictionary self, size_t index) {
 }
 
 char* Dictionary_get_random_word(Dictionary self) {
+    if (self.len == 0) {
+        fprintf(stderr, "Dictionnaire vide, impossible de récupérer un mot");
+        exit(1);
+    }
+
     return Dictionary_get(self, rand() % self.len);
 }
 
