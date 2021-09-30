@@ -1,8 +1,11 @@
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
+#include <fcntl.h>
 
 #ifdef NDEBUG
 #include <time.h>
@@ -11,22 +14,104 @@
 // Nombre maximal d'erreurs avant l'échec
 const u_int64_t MAX_ERRORS = 10;
 
+typedef struct DictionaryEntry_ {
+    struct DictionaryEntry_* next;
+    char* word;
+} DictionaryEntry;
+
 /**
- * Stocke un dictionnaire sous la forme d'un tableau de mémoire continue de cellule 0 `ptr` et de longueur `len`.
+ * Stocke un dictionnaire sous la forme d'une liste chaînée de longueur `len`.
  */
 typedef struct {
-    char** ptr;
+    DictionaryEntry* head;
     size_t len;
 } Dictionary;
 
-char* Dictionary_get_random_word(Dictionary self) {
-    return self.ptr[rand() % self.len];
+char* Dictionary_get(Dictionary self, size_t index) {
+    assert(index < self.len);
+
+    DictionaryEntry* entry = self.head;
+    while (0 != index--) {
+        assert(entry != NULL);
+        entry = entry->next;
+    }
+
+    return entry->word;
 }
 
-const Dictionary DICTIONARY = {
-        .ptr = (char*[]) { "pomme", "abricot", "banane", "coing", "raisin" },
-        .len = 5,
-};
+char* Dictionary_get_random_word(Dictionary self) {
+    return Dictionary_get(self, rand() % self.len);
+}
+
+size_t read_catch(ssize_t result) {
+    if (result == -1) {
+        fprintf(stderr, "read() a rencontré une erreur: %s\n", strerror(errno));
+        exit(1);
+    } else {
+        return result;
+    }
+}
+
+/**
+ * @warning Not thread-safe
+ * @returns Malloc-ed strings
+ */
+char* read_line(int fd) {
+    static char BUFFER[256];
+
+    size_t index = 0;
+    while (read_catch(read(fd, &BUFFER[index], 1)) == 1) {
+        if (BUFFER[index] == '\n') {
+            BUFFER[index] = 0;
+            char* word = malloc(index + 1);
+            strcpy(word, BUFFER);
+            return word;
+        }
+
+        if (++index >= sizeof(BUFFER)) {
+            fprintf(stderr, "Ligne trop longue pour être lue\n");
+            exit(1);
+        }
+    }
+
+    return NULL;
+}
+
+Dictionary Dictionary_read(char* file_name) {
+    int file = open(file_name, O_RDONLY);
+    if (file == -1) {
+        fprintf(stderr, "Le fichier \"%s\" n'a pas pu être ouvert: %s\n", file_name, strerror(errno));
+        exit(1);
+    }
+
+    Dictionary dictionary = {
+            .len = 0,
+    };
+
+    DictionaryEntry** tail = &dictionary.head;
+
+    char* line;
+    while ((line = read_line(file))) {
+        if (line[0] == 0 || line[0] == '#') {
+            // Empty lines and "comments" are skipped
+            continue;
+        }
+
+        DictionaryEntry* current = malloc(sizeof(DictionaryEntry));
+        current->word = line;
+        *tail = current;
+        tail = &current->next;
+
+        dictionary.len ++;
+    }
+
+    // "Close" the linked list
+    *tail = NULL;
+
+    close(file);
+
+    return dictionary;
+}
 
 /**
  * État d'une partie en cours. `word` est le mot secret à deviner et `revealed` est une liste `malloc`ée des lettres
@@ -113,7 +198,7 @@ int main() {
            "Compilez avec `-DNDEBUG` pour avoir la version \"release\".\n\e[0m");
 #endif
 
-    char* secret = Dictionary_get_random_word(DICTIONARY);
+    char* secret = Dictionary_get_random_word(Dictionary_read("dico.txt"));
 
     State state = State_new(secret);
 

@@ -25,5 +25,4 @@ make
 
 ## Configuration
 
-Le dictionnaire est défini avec la constante `DICTIONARIES`. Attention à bien modifier la longueur `len` si des modifications sont faites.
 Le nombre d'erreurs autorisées est contraint par la constante `MAX_ERRORS`. Comme j'utilise un nombre d'erreur maximales au lieu d'un nombre d'essai maximal, il est impossible que la victoire soit impossible, donc aucune vérification n'a besoin d'être faite.
