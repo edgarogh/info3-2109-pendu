@@ -5,7 +5,7 @@ sel
 jambon
 oeuf
 fromage
-kouignamann
+kouign amann
 moules
 huitre
 cidre
@@ -18,13 +18,13 @@ far
 coco
 crepe
 lambig
-kighafarzh
+kig ha farzh
 caramel
 chouchen
 palet
 oignon
 fraise
-quatrequart
+quatre quart
 coquilles
 langouste
 gavotte

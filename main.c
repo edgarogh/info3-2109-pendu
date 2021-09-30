@@ -156,14 +156,14 @@ bool State_reveal(State* self, char c) {
 void State_print(State* self) {
     char current;
     for (size_t i = 0; (current = self->word[i]) != 0; i++) {
-        printf("%c", self->revealed[i] ? current : '-');
+        printf("%c", self->revealed[i] || self->word[i] == ' ' ? current : '-');
     }
     printf("\n");
 }
 
 bool State_is_fully_revealed(State* self) {
     for (size_t i = 0; self->word[i] != 0; i++) {
-        if (!self->revealed[i]) return false;
+        if (!self->revealed[i] && self->word[i] != ' ') return false;
     }
 
     return true;
